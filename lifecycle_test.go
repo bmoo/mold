@@ -33,7 +33,7 @@ func Test_LifeCycle_buildless(t *testing.T) {
 	dw.RemoveArtifacts()
 }
 
-func Test_LifeCycle_fail(t *testing.T) {
+func Test_LifeCycle_fail_DueToBadExitCodeInCommands(t *testing.T) {
 	mc, _ := readMoldConfig("./testdata/mold.fail.yml")
 	mc.RepoName += "-test3"
 
