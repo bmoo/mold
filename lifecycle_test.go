@@ -84,8 +84,8 @@ func Test_LifeCycle_RunTarget(t *testing.T) {
 	}
 }
 
-func Test_LifeCycle_Resolution(t *testing.T) {
-	mc, worker, _ := initializeBuild("./testdata/mold7.yml", *dockerURI)
+func Test_LifeCycle_BuildContainerCanLocateServiceContainerOnNetwork(t *testing.T) {
+	mc, worker, _ := initializeBuild("./testdata/buildlocatesservice.yml", *dockerURI)
 	lc := NewLifeCycle(worker)
 	if err := lc.Run(mc); err != nil {
 		t.Fatal(err)
