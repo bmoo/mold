@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"github.com/docker/docker/api/types/network"
 	"time"
 	"github.com/docker/docker/api/types"
 	"io"
@@ -20,9 +19,7 @@ func Test_buildServiceStates_AddsFirstSevenCharsOfGitHashToContainerName(t *test
 		LastCommit: "hash123456789",
 	}
 
-	networkConfig := &network.NetworkingConfig{}
-
-	result, err := buildServiceStates(moldConfig, networkConfig)
+	result, err := buildServiceStates(moldConfig, "irrelevant")
 	if err != nil {
 		t.Errorf("Expected no error but got %v", err)
 	}
@@ -31,6 +28,38 @@ func Test_buildServiceStates_AddsFirstSevenCharsOfGitHashToContainerName(t *test
 	if result[0].Name != expected {
 		t.Errorf("expected %v but got %v", expected, result[0].Name)
 	}
+}
+
+func Test_buildServiceStates_SetsNetworkAliasToServiceNameWithoutHash(t *testing.T) {
+	moldConfig := &MoldConfig{
+		Services: []DockerRunConfig{
+			{
+				Name: "servicename",
+			},
+		},
+		LastCommit: "commithash",
+		RepoName: "repo",
+		BranchTag: "branch",
+	}
+
+	result, err := buildServiceStates(moldConfig, "foo")
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
+
+	if !contains(result[0].Network.EndpointsConfig["repo-branch-commitha"].Aliases, "servicename") {
+		t.Error("Expected a network alias called servicename but didn't find one")
+	}
+}
+
+// why, golang? why?
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 type remove func(containerID string, force bool) error

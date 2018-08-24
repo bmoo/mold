@@ -92,7 +92,7 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 	dw.buildConfig = cfg
 
 	var err error
-	dw.serviceStates, err = buildServiceStates(cfg, dw.defaultNetConfig())
+	dw.serviceStates, err = buildServiceStates(cfg, dw.netID)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,13 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 		}
 		cs.Name = fmt.Sprintf("%s-%d-%d", dw.buildConfig.Name(), i, time.Now().UnixNano())
 		cs.shortName = shortContainerName(cs.Name)
-		cs.Network = dw.defaultNetConfig()
+		cs.Network = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				dw.buildConfig.Name(): &network.EndpointSettings{
+					NetworkID: dw.netID,
+				},
+			},
+		}
 
 		if dw.buildConfig.Build[i].Cache {
 			hash, err := getBuildHash(cs.ContainerConfig)
@@ -129,7 +135,7 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 	return nil
 }
 
-func buildServiceStates(cfg *MoldConfig, networkConfig *network.NetworkingConfig) ([]*containerState, error) {
+func buildServiceStates(cfg *MoldConfig, networkID string) ([]*containerState, error) {
 	sc, err := convertMoldServiceConfigToContainerConfig(cfg.Services)
 	if err != nil {
 		return nil, err
@@ -161,10 +167,17 @@ func buildServiceStates(cfg *MoldConfig, networkConfig *network.NetworkingConfig
 			cs.Name = newName
 		}
 
-		cs.Name = cs.Name + "-" + cfg.LastCommit[:8]
-
 		// Attach network
-		cs.Network = networkConfig
+		cs.Network = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				cfg.Name(): {
+					NetworkID: networkID,
+					Aliases:   []string{cs.Name},
+				},
+			},
+		}
+
+		cs.Name = cs.Name + "-" + cfg.LastCommit[:8]
 		result[i] = cs
 	}
 
@@ -244,16 +257,6 @@ func assembleBuildContainers(mc *MoldConfig) ([]*ContainerConfig, error) {
 		}
 	}
 	return bconts, nil
-}
-
-func (dw *DockerWorker) defaultNetConfig() *network.NetworkingConfig {
-	return &network.NetworkingConfig{
-		EndpointsConfig: map[string]*network.EndpointSettings{
-			dw.buildConfig.Name(): &network.EndpointSettings{
-				NetworkID: dw.netID,
-			},
-		},
-	}
 }
 
 // GenerateArtifacts builds docker images
