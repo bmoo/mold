@@ -99,7 +99,7 @@ func Test_LifeCycle_multi_artifact(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func Test_LifeCycle_dublicate_name(t *testing.T) {
+func Test_LifeCycle_duplicate_name(t *testing.T) {
 	mc, worker, _ := initializeBuild("./testdata/mold.duplicate.name.yml", *dockerURI)
 	lc := NewLifeCycle(worker)
 	if err := lc.Run(mc); err != nil {
@@ -107,11 +107,11 @@ func Test_LifeCycle_dublicate_name(t *testing.T) {
 	}
 }
 
-func Test_LifeCycle_dublicate_name_fail(t *testing.T) {
+func Test_LifeCycle_duplicate_name_fail(t *testing.T) {
 	mc, worker, _ := initializeBuild("./testdata/mold.duplicate.name.fail.yml", *dockerURI)
 	lc := NewLifeCycle(worker)
 	if err := lc.Run(mc); err == nil {
-		t.Fatal("should fail with error \"dublicate name\"")
+		t.Fatal("should fail with error \"duplicate name\"")
 	}
 }
 
