@@ -582,8 +582,8 @@ func (dw *DockerWorker) getImageID(repoName string) (string, error) {
 }
 
 // TODO: add locking???
-// markContainerDone marks the container as done.  Return if all the build containers have completed
-func (dw *DockerWorker) markContainerDone(id, status string, state *types.ContainerState) bool {
+// markContainerDoneAndUpdateBuildState marks the container as done.  Return if all the build containers have completed
+func (dw *DockerWorker) markContainerDoneAndUpdateBuildState(id, status string, state *types.ContainerState) bool {
 	for i, v := range dw.buildStates {
 		if v.ID() == id {
 			dw.mu.Lock()
@@ -624,7 +624,7 @@ func (dw *DockerWorker) watchBuild() {
 				if c := dw.buildStates.Get(msg.Actor.ID); c != nil {
 					// Breakout if the whole build is done.  This does not update the status
 					// and is there more so the build doesn't block forever in case of failures
-					if dw.markContainerDone(msg.Actor.ID, "", nil) {
+					if dw.markContainerDoneAndUpdateBuildState(msg.Actor.ID, "", nil) {
 						return
 					}
 				}
@@ -647,7 +647,7 @@ func (dw *DockerWorker) watchBuild() {
 						status = msg.Action
 					}
 					// breakout if the whole build is done
-					if dw.markContainerDone(msg.Actor.ID, status, &state) {
+					if dw.markContainerDoneAndUpdateBuildState(msg.Actor.ID, status, &state) {
 						return
 					}
 				}
