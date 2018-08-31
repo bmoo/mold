@@ -136,9 +136,7 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 	return nil
 }
 
-type generateHash func() string
-
-func buildServiceStates(cfg *MoldConfig, networkID string, hashFunc generateHash) ([]*containerState, error) {
+func buildServiceStates(cfg *MoldConfig, networkID string, suffix func() string) ([]*containerState, error) {
 	sc, err := convertMoldServiceConfigToContainerConfig(cfg.Services)
 	if err != nil {
 		return nil, err
@@ -180,7 +178,7 @@ func buildServiceStates(cfg *MoldConfig, networkID string, hashFunc generateHash
 			},
 		}
 
-		cs.Name = cs.Name + "-" + hashFunc()
+		cs.Name = cs.Name + "-" + suffix()
 		result[i] = cs
 	}
 
