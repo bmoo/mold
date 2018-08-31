@@ -7,26 +7,28 @@ import (
 	"io"
 	"github.com/docker/docker/client"
 	"errors"
+	"github.com/docker/docker/api/types/network"
 )
 
-func Test_buildServiceStates_AddsFirstSevenCharsOfGitHashToContainerName(t *testing.T) {
+func Test_buildServiceStates_AddsFirstEightCharsOfGitHashToContainerName(t *testing.T) {
 	moldConfig := &MoldConfig{
 		Services: []DockerRunConfig{
 			{
 				Name: "servicename",
 			},
 		},
-		LastCommit: "hash123456789",
 	}
 
-	result, err := buildServiceStates(moldConfig, "irrelevant")
+	result, err := buildServiceStates(moldConfig, "irrelevant", func() string {
+		return "aprettylonghash"
+	})
 	if err != nil {
-		t.Errorf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got %v", err)
 	}
 
-	expected := "servicename-hash1234"
+	expected := "servicename-aprettylonghash"
 	if result[0].Name != expected {
-		t.Errorf("expected %v but got %v", expected, result[0].Name)
+		t.Fatalf("expected %v but got %v", expected, result[0].Name)
 	}
 }
 
@@ -37,18 +39,26 @@ func Test_buildServiceStates_SetsNetworkAliasToServiceNameWithoutHash(t *testing
 				Name: "servicename",
 			},
 		},
-		LastCommit: "commithash",
 		RepoName: "repo",
 		BranchTag: "branch",
 	}
 
-	result, err := buildServiceStates(moldConfig, "foo")
+	result, err := buildServiceStates(moldConfig, "foo", func() string {
+		return "thehashk"
+	})
 	if err != nil {
-		t.Errorf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got %v", err)
 	}
 
-	if !contains(result[0].Network.EndpointsConfig["repo-branch-commitha"].Aliases, "servicename") {
-		t.Error("Expected a network alias called servicename but didn't find one")
+	networkConfigName := "repo-branch"
+	var endpointConfig *network.EndpointSettings
+	var ok bool
+	if endpointConfig, ok = result[0].Network.EndpointsConfig[networkConfigName]; !ok {
+		t.Fatalf("expected to find a network config with name %v", networkConfigName)
+	}
+
+	if !contains(endpointConfig.Aliases, "servicename") {
+		t.Fatalf("Expected a network alias called servicename but didn't find one")
 	}
 }
 

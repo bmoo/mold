@@ -19,6 +19,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"io"
 	"github.com/docker/docker/client"
+	"strconv"
 )
 
 // default timeout when trying to stop a container.
@@ -92,7 +93,7 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 	dw.buildConfig = cfg
 
 	var err error
-	dw.serviceStates, err = buildServiceStates(cfg, dw.netID)
+	dw.serviceStates, err = buildServiceStates(cfg, dw.netID, func() string { return strconv.FormatInt(time.Now().UnixNano(), 10) })
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,9 @@ func (dw *DockerWorker) Configure(cfg *MoldConfig) error {
 	return nil
 }
 
-func buildServiceStates(cfg *MoldConfig, networkID string) ([]*containerState, error) {
+type generateHash func() string
+
+func buildServiceStates(cfg *MoldConfig, networkID string, hashFunc generateHash) ([]*containerState, error) {
 	sc, err := convertMoldServiceConfigToContainerConfig(cfg.Services)
 	if err != nil {
 		return nil, err
@@ -177,7 +180,7 @@ func buildServiceStates(cfg *MoldConfig, networkID string) ([]*containerState, e
 			},
 		}
 
-		cs.Name = cs.Name + "-" + cfg.LastCommit[:8]
+		cs.Name = cs.Name + "-" + hashFunc()
 		result[i] = cs
 	}
 
